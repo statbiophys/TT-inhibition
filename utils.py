@@ -9,7 +9,7 @@ class TT_params(object) :
     Parameters for simulations of T-cell clone growth in presence of antigens and with
     TT inhibition
     """
-    def __init__(self, beta, gamma, lambd, P0, mu, alpha):
+    def __init__(self, beta, gamma, lambd, P0, mu, alpha, n=1):
         # Rate of conversion from MHC bind to TCR growth
         self.beta = beta
         # TCR death rate
@@ -22,6 +22,8 @@ class TT_params(object) :
         self.mu = mu
         # Inibition-factor growth rate constant
         self.alpha = alpha
+        #  Number TCRs
+        self.n = n
 
     def print_on_file(self, path):
         sr = pd.Series({
