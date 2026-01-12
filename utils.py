@@ -9,33 +9,52 @@ class TT_params(object) :
     Parameters for simulations of T-cell clone growth in presence of antigens and with
     TT inhibition
     """
-    def __init__(self, beta, gamma, lambd, P0, mu, alpha, n=1):
+    def __init__(self, k_offs, beta0=1, tau_crit=1, gamma=1e0, lambd=1, P0=1e4, mu=1e-1, alpha0=5e-4):
+        
+        # List of dissotiation constants for all the T-cells in simulation
+        self.k_offs = np.array(k_offs)
         # Rate of conversion from MHC bind to TCR growth
-        self.beta = beta
-        # TCR death rate
+        self.beta0 = beta0
+        # Typical time of activation
+        self.tau_crit = tau_crit
+        # T cell death rate
         self.gamma = gamma
         # Rate of aquisition of MHC from TCRs
         self.lambd = lambd
-        # Number of initial MHC
+        # Number of initial MHC-presented antigens
         self.P0 = P0
-        # Degradation rate MHC
+        # Antigen degradation rate
         self.mu = mu
         # Inibition-factor growth rate constant
-        self.alpha = alpha
-        #  Number TCRs
-        self.n = n
+        self.alpha0 = alpha0
 
-    def print_on_file(self, path):
+        # Number of T cells
+        self.n = len(k_offs)
+        # Activation rates for all the T cells
+        self.betas = self.beta0 * np.exp(-self.k_offs * self.tau_crit)
+        self.mean_beta = np.mean(self.betas)
+        # Inhibition rates
+        self.alphas = self.alpha0 / self.k_offs
+        self.mean_alpha = np.mean(self.alphas)
+        
+
+    def print_on_file(self, folder, file_name, other_pars={}):
+        """
+        Print the parameters on a tsv file at "path". Other parameters can be added 
+        to the file if passed in other_pars dictionary.
+        """
         sr = pd.Series({
-            'beta':self.beta, 
+            'beta0':self.beta0, 
+            'tau_crit':self.tau_crit, 
             'gamma':self.gamma, 
             'lambda':self.lambd, 
             'P0':self.P0, 
             'mu':self.mu, 
-            'alpha':self.alpha
+            'alpha0':self.alpha0,
+            **other_pars
         })
         sr = sr[sr.notna()]
-        sr.to_csv(path, sep='\t', header=None)
+        sr.to_csv(folder+file_name+'.tsv', sep='\t', header=None)
         
 
 
