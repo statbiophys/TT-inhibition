@@ -1,6 +1,6 @@
-beta0	2.0
+beta0	1.0
 tau_crit	1.0
-gamma	0.05
-lambda	0.0001
+gamma	0.03
+lambda	0.001
 P0	1.0
-mu	0.05
+mu	0.03
