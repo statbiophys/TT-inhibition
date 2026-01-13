@@ -1,7 +1,7 @@
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
-from matplotlib.collections import LineCollection
+from scipy.stats import lognorm
 
 
 class TT_params(object) : 
@@ -9,10 +9,10 @@ class TT_params(object) :
     Parameters for simulations of T-cell clone growth in presence of antigens and with
     TT inhibition
     """
-    def __init__(self, k_offs, beta0=1, tau_crit=1, gamma=1e0, lambd=1, P0=1e4, mu=1e-1, alpha0=5e-4):
+    def __init__(self, taus, beta0=1, tau_crit=1, gamma=0.03, lambd=0.001, P0=1.0, mu=0.03, alpha0=5e-4):
         
         # List of dissotiation constants for all the T-cells in simulation
-        self.k_offs = np.array(k_offs)
+        self.taus = np.array(taus)
         # Rate of conversion from MHC bind to TCR growth
         self.beta0 = beta0
         # Typical time of activation
@@ -29,12 +29,12 @@ class TT_params(object) :
         self.alpha0 = alpha0
 
         # Number of T cells
-        self.n = len(k_offs)
+        self.n = len(taus)
         # Activation rates for all the T cells
-        self.betas = self.beta0 * np.exp(-self.k_offs * self.tau_crit)
+        self.betas = self.beta0 * np.exp(- self.tau_crit / self.taus)
         self.mean_beta = np.mean(self.betas)
         # Inhibition rates
-        self.alphas = self.alpha0 / self.k_offs
+        self.alphas = self.alpha0 * self.taus
         self.mean_alpha = np.mean(self.alphas)
         
 
@@ -56,6 +56,14 @@ class TT_params(object) :
         sr = sr[sr.notna()]
         sr.to_csv(folder+file_name+'.tsv', sep='\t', header=None)
         
+
+def sample_taus_lognorm(logmean=-4, logstd=2.5, n_samples=100):
+    """
+    Return n_samples from a lognormal distributio having given log mean and log
+    standard deviation
+    """
+    ln = lognorm(s=logstd, scale=np.exp(logmean))
+    return ln.rvs(n_samples)
 
 
 def nsolve(init_vars, vars_dots, pars, t_steps, dt, traj_steps=10):
@@ -91,3 +99,22 @@ def nsolve(init_vars, vars_dots, pars, t_steps, dt, traj_steps=10):
         if ti % traj_steps == 0:
             trajs.append([np.copy(var) for var in _vars])
     return trajs
+
+
+### FULL SYSTEM EQUATIONS
+
+def Ts_dot(var, pars):
+    Ts, P, Ss = var
+    res = Ts * ( pars.betas * P * (1 - Ss) - pars.gamma )
+    #res[Ts < 1] = 0
+    return res
+
+def Ss_dot(var, pars):
+    Ts, P, Ss = var
+    res = pars.alphas * np.sum(Ts)
+    res[Ss >= 1] = 0
+    return res
+
+def P_dot(var, pars):
+    Ts, P, Ss = var
+    return - P * ( pars.lambd * np.sum(pars.betas * (1 - Ss) * Ts) + pars.mu )
