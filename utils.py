@@ -39,14 +39,13 @@ class TT_params(object) :
         # Inhibition rates
         self.alphas = self.alpha0 * self.taus
         self.mean_alpha = np.mean(self.alphas)
-        
-        
-    def print_on_file(self, folder, file_name, other_pars={}):
+
+
+    def get_pars(self):
         """
-        Print the parameters on a tsv file at "path". Other parameters can be added 
-        to the file if passed in other_pars dictionary.
+        Return the parameters as a dictionary
         """
-        sr = pd.Series({
+        return {
             'beta0':self.beta0, 
             'tau_crit':self.tau_crit, 
             'gamma':self.gamma, 
@@ -54,12 +53,53 @@ class TT_params(object) :
             'P0':self.P0, 
             'mu':self.mu, 
             'alpha0':self.alpha0,
-            **other_pars
-        })
+        }
+        
+    def print_on_file(self, folder, file_name, other_pars={}):
+        """
+        Print the parameters on a tsv file at "path". Other parameters can be added 
+        to the file if passed in other_pars dictionary.
+        """
+        sr = pd.Series({**self.get_pars(), **other_pars})
         sr = sr[sr.notna()]
         sr.to_csv(folder+file_name+'.tsv', sep='\t', header=None)
 
 
+class tau_sampler_lognorm(object):
+    """
+    Generate n_samples from a lognormal distribution having given log mean and log
+    standard deviation in the variable taus
+    """
+    def __init__(self, logmean=-4, logstd=2.5, n_samples=100):
+        self.logmean = logmean
+        self.logstd = logstd
+        self.n_samples = n_samples
+        self.ln = lognorm(s=logstd, scale=np.exp(logmean))
+        self.sample()
+
+    def sample(self):
+        self.taus = self.ln.rvs(self.n_samples)
+        
+    def get_pars(self):
+        """
+        Return the parameters as a dictionary
+        """
+        return {
+            'logmean':self.logmean, 
+            'logstd':self.logstd, 
+            'n_samples':self.n_samples
+        }
+
+    def get_av_std_max(self):
+        """
+        Average and standard deviation of a maximum sampled from the lognormal
+        """
+        lN, lm, lstd = np.log(self.n_samples), self.logmean, self.logstd
+        av = np.exp(lm + lstd*(np.sqrt(2*lN) - (np.log(lN) + np.log(4*np.pi))/(2*np.sqrt(2*lN))))
+        std = np.pi * lstd * av / np.sqrt(12 * lN)
+        return av, std
+
+        
 def nsolve(init_vars, vars_dots, pars, t_steps, dt, stop_cond=None, max_iterations=20, traj_steps=10):
     """
     Numerical solver for a dynamical system of equations.
@@ -109,24 +149,18 @@ def nsolve(init_vars, vars_dots, pars, t_steps, dt, stop_cond=None, max_iteratio
                 
     return times, trajs
 
-
-### SAMPLING TAUS
-
-def sample_taus_lognorm(logmean=-4, logstd=2.5, n_samples=100):
+        
+def dt_adapted(pars, tau_sampler, scale_factor=200):
     """
-    Return n_samples from a lognormal distributio having given log mean and log
-    standard deviation
+    Finding an estimate of dt as scale_factor times smaller than the shorter
+    time scale of the system
     """
-    ln = lognorm(s=logstd, scale=np.exp(logmean))
-    return ln.rvs(n_samples)
-
-def av_max_lognorm(logmean=-4, logstd=2.5, n_samples=100):
-    """
-    Average maximum sampled from a lognormal
-    """
-    lN = np.log(n_samples)
-    return np.exp(logmean + logstd*(np.sqrt(2*lN) - (np.log(lN) + np.log(4*np.pi))/(2*np.sqrt(2*lN))))
-
+    av_max_tau, std_max_tau = tau_sampler.get_av_std_max()
+    av_max_alpha = pars.alpha0 * (av_max_tau + std_max_tau)
+    scales = [1/av_max_alpha, 1/pars.beta0]
+    dt = np.min(scales) / scale_factor
+    return dt
+    
     
 ### FULL SYSTEM EQUATIONS
 
@@ -147,7 +181,7 @@ def P_dot(var, pars):
     return - P * ( pars.lambd * np.sum(pars.betas * (1 - Ss) * Ts) + pars.mu )
 
 
-def run_setting(pars, t_steps, dt, stop_cond=None, max_iterations=20, traj_steps=1):
+def run_setting(pars, tau_sampler, t_steps, dt, stop_cond=None, max_iterations=20, traj_steps=1):
     """
     It runs the numerical integration of the full setting given the TT_params and the 
     integration parameters: t_steps (number of time steps), dt (infinitesimal time
@@ -157,7 +191,9 @@ def run_setting(pars, t_steps, dt, stop_cond=None, max_iterations=20, traj_steps
     other t_steps until success or the number of max_iterations is reached.
     stop_cond=None does not test any condition and the simulation stops after t_steps
     """
-    
+
+    if dt == 'adapt': dt = dt_adapted(pars, tau_sampler, scale_factor=200)
+        
     # Initial conditions of T (list for each clone), P and S (list for each clone)
     init_vars = [np.ones(len(pars.taus)), pars.P0, np.zeros(len(pars.taus))]
     
