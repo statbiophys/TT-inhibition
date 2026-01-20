@@ -62,7 +62,7 @@ class TT_params(object) :
         """
         sr = pd.Series({**self.get_pars(), **other_pars})
         sr = sr[sr.notna()]
-        sr.to_csv(folder+file_name+'.tsv', sep='\t', header=None)
+        sr.to_csv(folder+'/'+file_name+'.tsv', sep='\t', header=None)
 
 
 class tau_sampler_lognorm(object):
@@ -100,7 +100,7 @@ class tau_sampler_lognorm(object):
         return av, std
 
         
-def nsolve(init_vars, vars_dots, pars, t_steps, dt, stop_cond=None, max_iterations=20, traj_steps=10):
+def nsolve(init_vars, vars_dots, pars, t_steps, dt, stop_cond=None, traj_steps=10):
     """
     Numerical solver for a dynamical system of equations.
     
@@ -110,11 +110,12 @@ def nsolve(init_vars, vars_dots, pars, t_steps, dt, stop_cond=None, max_iteratio
     vars_dots: list of dot equations for each of the variables. The dot equation
         is a function of the list of variables and the parameters.
     pars: parameters to be passed to the vars_dots functions.
-    t_steps (int): Number of time steps.
+    t_steps (int): Number of time steps. If stop_cond is specified, this is the maximum
+        number of steps after which the simulation is stopped anyway.
     dt (float): infinitesimal length of the time step.
     traj_steps (int): the values of the variables are stored every 'traj_steps'.
-    stop_cond (boolean funct of the vars and pars): if not None it is tested at the end of
-        t_steps and the simulations goes on in blocks of t_steps until the condition
+    stop_cond (boolean funct of the trajs and pars): if not None it is tested at the end of
+        a batch of t_steps and the simulations goes on with another batch until the condition
         is satisfied or after max_iterations.
     max_iterations (int): maximum number of iteration of the stop condition
         (not used if stop_cond=None).
@@ -132,21 +133,34 @@ def nsolve(init_vars, vars_dots, pars, t_steps, dt, stop_cond=None, max_iteratio
     
     _vars = [np.copy(var) for var in init_vars]
     trajs, times = [], []
-    if stop_cond is None: stop_cond = lambda x, y : True # Stop_cond always true if None
-        
-    for n_iter in range(max_iterations): # Iterations over stop_condition
-        
-        for ti_at_iter in range(t_steps):
-            ti = n_iter*t_steps + ti_at_iter
-            dots = [vars_dot(_vars, pars) for vars_dot in vars_dots]
-            for i in range(len(_vars)):
-                _vars[i] += (np.array(dots[i]) * dt)
-            if ti % traj_steps == 0:
-                times.append(ti*dt)
-                trajs.append([np.copy(var) for var in _vars])
+    if stop_cond is None: stop_cond = lambda x, y : False # Stop_cond always true if None
+    #end_traj_i = -1 # Last index of trajectory to fine tune stop condition within the batch
 
-        if stop_cond(_vars, pars): break # Stop condition tested
+    #for n_iter in range(max_iterations): # Iterations over stop_condition batches
+        
+    for ti in range(t_steps):
+        dots = [vars_dot(_vars, pars) for vars_dot in vars_dots]
+        for i in range(len(_vars)): _vars[i] += (np.array(dots[i]) * dt)
+        if ti % traj_steps == 0:
+            times.append(ti*dt)
+            trajs.append([np.copy(var) for var in _vars])
+            if stop_cond(trajs, pars): # Stop condition tested at end of batch
+                break
+
+        #if stop_cond(_vars, pars): # Stop condition tested at end of batch
+        #    traj_i = int(n_iter * t_steps / traj_steps)
+        #    # Finding exactly within the batch when the condition stops
+        #    _vars = trajs[traj_i]
+        #    while traj_i < len(times): # Iter over trajectory within the last batch
+        #        dots = [vars_dot(_vars, pars) for vars_dot in vars_dots]
+        #        for i in range(len(_vars)): _vars[i] += (np.array(dots[i]) * dt*traj_steps)
+        #        if stop_cond(_vars, pars):
+        #            end_traj_i = traj_i
+        #            break
+        #        traj_i += 1
+        #    break 
                 
+    
     return times, trajs
 
         
@@ -181,7 +195,7 @@ def P_dot(var, pars):
     return - P * ( pars.lambd * np.sum(pars.betas * (1 - Ss) * Ts) + pars.mu )
 
 
-def run_setting(pars, tau_sampler, t_steps, dt, stop_cond=None, max_iterations=20, traj_steps=1):
+def run_setting(pars, tau_sampler, t_steps, dt, stop_cond=None, traj_steps=1):
     """
     It runs the numerical integration of the full setting given the TT_params and the 
     integration parameters: t_steps (number of time steps), dt (infinitesimal time
@@ -201,7 +215,7 @@ def run_setting(pars, tau_sampler, t_steps, dt, stop_cond=None, max_iterations=2
     dot_eqs = [Ts_dot, P_dot, Ss_dot]
 
     # Integrating the trajectories
-    times, trajs = nsolve(init_vars, dot_eqs, pars, t_steps, dt, stop_cond, max_iterations, traj_steps)
+    times, trajs = nsolve(init_vars, dot_eqs, pars, t_steps, dt, stop_cond, traj_steps)
     
     # Defining useful variables
     T_trajs = np.array([tr[0] for tr in trajs])
