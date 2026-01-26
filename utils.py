@@ -9,7 +9,7 @@ class TT_params(object) :
     Parameters for simulations of T-cell clone growth in presence of antigens and with
     TT inhibition
     """
-    def __init__(self, taus, beta0=1, tau_crit=1, gamma=0.03, lambd=0.001, P0=1.0, mu=0.03, alpha0=5e-4):
+    def __init__(self, taus, beta0=2, tau_crit=1, gamma=0.05, lambd=0.001, P0=1.0, mu=0.05, alpha0=5e-4):
         
         # Rate of conversion from MHC bind to TCR growth
         self.beta0 = beta0
@@ -134,9 +134,6 @@ def nsolve(init_vars, vars_dots, pars, t_steps, dt, stop_cond=None, traj_steps=1
     _vars = [np.copy(var) for var in init_vars]
     trajs, times = [], []
     if stop_cond is None: stop_cond = lambda x, y : False # Stop_cond always true if None
-    #end_traj_i = -1 # Last index of trajectory to fine tune stop condition within the batch
-
-    #for n_iter in range(max_iterations): # Iterations over stop_condition batches
         
     for ti in range(t_steps):
         dots = [vars_dot(_vars, pars) for vars_dot in vars_dots]
@@ -146,20 +143,6 @@ def nsolve(init_vars, vars_dots, pars, t_steps, dt, stop_cond=None, traj_steps=1
             trajs.append([np.copy(var) for var in _vars])
             if stop_cond(trajs, pars): # Stop condition tested at end of batch
                 break
-
-        #if stop_cond(_vars, pars): # Stop condition tested at end of batch
-        #    traj_i = int(n_iter * t_steps / traj_steps)
-        #    # Finding exactly within the batch when the condition stops
-        #    _vars = trajs[traj_i]
-        #    while traj_i < len(times): # Iter over trajectory within the last batch
-        #        dots = [vars_dot(_vars, pars) for vars_dot in vars_dots]
-        #        for i in range(len(_vars)): _vars[i] += (np.array(dots[i]) * dt*traj_steps)
-        #        if stop_cond(_vars, pars):
-        #            end_traj_i = traj_i
-        #            break
-        #        traj_i += 1
-        #    break 
-                
     
     return times, trajs
 
