@@ -9,7 +9,7 @@ class TT_params(object) :
     Parameters for simulations of T-cell clone growth in presence of antigens and with
     TT inhibition
     """
-    def __init__(self, taus, beta0=2, tau_crit=1, gamma=0.05, lambd=0.001, P0=1.0, mu=0.05, alpha0=5e-4):
+    def __init__(self, taus, beta0=2, tau_crit=1, gamma=0.05, lambd=0.001, P0=1.0, mu=0.05, alpha0=5e-4, inhib_T_th=4):
         
         # Rate of conversion from MHC bind to TCR growth
         self.beta0 = beta0
@@ -25,6 +25,8 @@ class TT_params(object) :
         self.mu = mu
         # Inibition-factor growth rate constant
         self.alpha0 = alpha0
+        # Threshold of T cell abundance above which inhibition starts
+        self.inhib_T_th = inhib_T_th
         # List of dissotiation constants for all the T-cells in simulation
         self.set_taus(np.array(taus))
         
@@ -53,6 +55,7 @@ class TT_params(object) :
             'P0':self.P0, 
             'mu':self.mu, 
             'alpha0':self.alpha0,
+            'inhib_T_th':self.inhib_T_th,
         }
         
     def print_on_file(self, folder, file_name, other_pars={}):
@@ -169,8 +172,10 @@ def Ts_dot(var, pars):
 
 def Ss_dot(var, pars):
     Ts, P, Ss = var
-    res = pars.alphas * np.sum(Ts)
+    exper_T_mask = Ts >= pars.inhib_T_th
+    res = pars.alphas * np.sum(Ts[exper_T_mask])
     res[Ss >= 1] = 0
+    res[~exper_T_mask] = 0
     return res
 
 def P_dot(var, pars):
