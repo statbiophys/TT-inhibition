@@ -150,7 +150,7 @@ def nsolve(init_vars, vars_dots, pars, t_steps, dt, stop_cond=None, traj_steps=1
     return times, trajs
 
         
-def dt_adapted(pars, tau_sampler, scale_factor=200):
+def dt_adapted(pars, tau_sampler, scale_factor=100):
     """
     Finding an estimate of dt as scale_factor times smaller than the shorter
     time scale of the system
@@ -159,7 +159,7 @@ def dt_adapted(pars, tau_sampler, scale_factor=200):
     av_max_alpha = pars.alpha0 * (av_max_tau + std_max_tau)
     scales = [1/av_max_alpha, 1/pars.beta0]
     dt = np.min(scales) / scale_factor
-    return dt
+    return min(dt, 0.01)
     
     
 ### FULL SYSTEM EQUATIONS
@@ -194,7 +194,7 @@ def run_setting(pars, tau_sampler, t_steps, dt, stop_cond=None, traj_steps=1):
     stop_cond=None does not test any condition and the simulation stops after t_steps
     """
 
-    if dt == 'adapt': dt = dt_adapted(pars, tau_sampler, scale_factor=200)
+    if dt == 'adapt': dt = dt_adapted(pars, tau_sampler, scale_factor=50)
         
     # Initial conditions of T (list for each clone), P and S (list for each clone)
     init_vars = [np.ones(len(pars.taus)), pars.P0, np.zeros(len(pars.taus))]

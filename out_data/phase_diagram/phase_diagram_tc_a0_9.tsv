@@ -1,11 +1,15 @@
-beta0	5.0
+beta0	2.0
 tau_crit	1.0
 gamma	0.05
 lambda	0.001
 P0	1.0
 mu	0.05
-alpha0	0.01
+alpha0	0.0005
 inhib_T_th	4.0
 logmean	-4.0
 logstd	2.5
 n_samples	100.0
+theta_stop	0.2
+no_max_perc	0.9
+min_expans	1.5
+R	200.0
