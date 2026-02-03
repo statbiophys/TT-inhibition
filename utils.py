@@ -9,7 +9,7 @@ class TT_params(object) :
     Parameters for simulations of T-cell clone growth in presence of antigens and with
     TT inhibition
     """
-    def __init__(self, taus, beta0=2, tau_crit=1, gamma=0.05, lambd=0.001, P0=1.0, mu=0.05, alpha0=5e-4, inhib_T_th=4):
+    def __init__(self, taus, beta0=2, tau_crit=1, gamma=0.05, lambd=0.001, P0=1.0, mu=0.05, alpha0=5e-4, inhib_T_th=2):
         
         # Rate of conversion from MHC bind to TCR growth
         self.beta0 = beta0
@@ -213,6 +213,8 @@ def run_setting(pars, tau_sampler, t_steps, dt, stop_cond=None, traj_steps=1):
     return times, T_trajs, P_trajs, S_trajs
 
 
+### OTHER GENERIC UTILITIES
+
 def binning_x(xs, ys, x_bins):
     """
     Given the coordinates x and y, it returns averages and standard deviations 
@@ -228,3 +230,31 @@ def binning_x(xs, ys, x_bins):
             std_x.append(np.std(xs[mask]))
             std_y.append(np.std(ys[mask]))
     return np.array(av_x), np.array(av_y), np.array(std_x), np.array(std_y)
+
+
+def bisection(function, a, b, tol):
+    """
+    Bisection method for finding the zero of the function in the range [a,b] with 
+    given tollerance
+    """
+    fa, fb = function(a), function(b)
+    if fa * fb >= 0:
+        print("You have not assumed right a and b in bisection:")
+        print(f"f(a)={fa}, f(b)={fb}")
+        return a
+    c = a
+    while (b-a) >= tol:
+        #Find middle point
+        c = (a+b)/2
+        fc = function(c)
+        #print(fc)
+        #Check if middle point is root
+        if fc == 0.0: break
+        #Decide the side to repeat the steps
+        else:
+            if fc*fa < 0:
+                b = c
+            else:
+                a = c
+                fa = fc
+    return c
