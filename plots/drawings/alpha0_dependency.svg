@@ -7,9 +7,6 @@
    id="svg524"
    sodipodi:docname="alpha0_dependency.svg"
    inkscape:version="1.2.2 (b0a8486541, 2022-12-01)"
-   inkscape:export-filename="alpha0_dependency.png"
-   inkscape:export-xdpi="200"
-   inkscape:export-ydpi="200"
    xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
    xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
    xmlns:xlink="http://www.w3.org/1999/xlink"
@@ -30,8 +27,8 @@
      inkscape:document-units="pt"
      showgrid="false"
      inkscape:zoom="1.4618056"
-     inkscape:cx="93.035629"
-     inkscape:cy="154.26128"
+     inkscape:cx="187.43943"
+     inkscape:cy="147.42043"
      inkscape:window-width="1854"
      inkscape:window-height="1011"
      inkscape:window-x="66"
@@ -1294,13 +1291,13 @@
   <text
      xml:space="preserve"
      style="font-weight:bold;font-size:12px;font-family:sans-serif;-inkscape-font-specification:'sans-serif Bold';fill:#ffffff;fill-opacity:1;stroke-width:0.75"
-     x="-137.36319"
-     y="59.018078"
+     x="-165.96793"
+     y="122.00462"
      id="text809"
      transform="rotate(-90)"><tspan
        sodipodi:role="line"
        id="tspan807"
        style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:12px;font-family:sans-serif;-inkscape-font-specification:sans-serif;fill:#ffffff;fill-opacity:1;stroke-width:0.75"
-       x="-137.36319"
-       y="59.018078">only increasing phase</tspan></text>
+       x="-165.96793"
+       y="122.00462">only increasing phase</tspan></text>
 </svg>
