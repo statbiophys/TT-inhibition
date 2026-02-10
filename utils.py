@@ -136,7 +136,7 @@ def nsolve(init_vars, vars_dots, pars, t_steps, dt, stop_cond=None, traj_steps=1
     
     _vars = [np.copy(var) for var in init_vars]
     trajs, times = [], []
-    if stop_cond is None: stop_cond = lambda x, y : False # Stop_cond always true if None
+    if stop_cond is None: stop_cond = lambda x, y : False # Stop_cond always false if None
         
     for ti in range(t_steps):
         dots = [vars_dot(_vars, pars) for vars_dot in vars_dots]
