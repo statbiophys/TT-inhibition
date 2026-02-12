@@ -1,10 +1,4 @@
 L_string	30.0
-N_tot	1000000.0
+N_tot	10000000.0
 N_recruit	100.0
-D0	1.3292687583755218
-R_beta0	100.0
-t_T_max	9.0
-t_T_max_tol	0.1
-R_traj	200.0
-mem_time	30.0
-dt	0.005
+D0	0.9857084823332053

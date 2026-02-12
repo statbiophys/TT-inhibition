@@ -107,8 +107,3 @@ def comp_h_dist(strings, target_string):
     a target string
     """
     return np.sum(np.array(strings) != np.array(target_string)[np.newaxis,:], axis=1)
-
-
-def comp_coverage_h(strings, abunds, target_string):
-    h_dists = comp_h_dist(strings, target_string)
-    return abunds*h_dists

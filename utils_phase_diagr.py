@@ -79,6 +79,8 @@ def find_max(taus_mat, Ts_mat, smooth_bins=100, quantile_taus=0.998):
     logT = [logT[i][tau_sort_i[i]] for i in range(len(logT))]
     ders = [(logT[i][1:] - logT[i][:-1]) / (logtaus[i][1:] - logtaus[i][:-1]) for i in range(len(logtaus))]
     mid_logtaus = [(logtaus[i][1:] + logtaus[i][:-1]) / 2.0 for i in range(len(logtaus))]
+    mid_logtaus = [mid_logtaus[i][~np.isnan(d)] for i, d in enumerate(ders)]
+    ders = [d[~np.isnan(d)] for d in ders]
 
     # Computing the average trajectory
     all_taus = np.concatenate(mid_logtaus)
