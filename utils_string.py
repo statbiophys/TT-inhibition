@@ -6,7 +6,7 @@ from scipy.optimize import brentq
 class TT_string(object):
 
 
-    def __init__(self, L_string, N_tot, N_recruit):
+    def __init__(self, L_string, N_tot, N_recruit, gamma=1.0):
         
         # Length of the binary string defining the clonotype
         self.L = L_string
@@ -21,13 +21,13 @@ class TT_string(object):
         #self.TT_p = TT_params
 
         # Exponent of the recruitment probability
-        self.gamma_recr = 1
+        self.gamma_recr = gamma
 
         # Setting the parameter D0 of the recruitment prob to fix N_recruit
         self.D0 = brentq(lambda x : self._av_p_recr(x) - N_recruit/N_tot, 0.01, 5) 
 
 
-    def gen_and_recruit_string(self, av_logtau=-4.0, std_logtau=2.5):
+    def gen_and_recruit_string(self):
         """
         It generates the full repertoire and select the recruited clonotypes according to
         P_recruit = exp(-(H/D0)^gamma).
@@ -45,9 +45,9 @@ class TT_string(object):
 
         self.recruit_strings = strings[unifs < recruit_probs,:]
         self.h_recruit = np.sum(self.recruit_strings, axis=1)
-        self.logtaus = self.get_logtau(self.h_recruit, av_logtau, std_logtau)
+        #self.logtaus = self.get_logtau(self.h_recruit, av_logtau, std_logtau)
 
-        return self.recruit_strings, self.h_recruit, self.logtaus
+        return self.recruit_strings, self.h_recruit
     
 
     def get_logtau(self, hs, av_logtau=-4.0, std_logtau=2.5):
@@ -69,6 +69,7 @@ class TT_string(object):
             'L_string' : self.L, 
             'N_tot' : self.N_tot, 
             'N_recruit' : self.N_recr,
+            'gamma' : self.gamma_recr,
             'D0' : self.D0
         }
     
@@ -107,3 +108,50 @@ def comp_h_dist(strings, target_string):
     a target string
     """
     return np.sum(np.array(strings) != np.array(target_string)[np.newaxis,:], axis=1)
+
+
+def compute_coverage_avh(h_dists, L, abunds, th_ab=1):
+
+    mask = abunds > th_ab
+    if sum(mask) == 0:
+        return L
+    
+    return np.sum(abunds[mask]*h_dists[mask]) / np.sum(abunds[mask])
+
+
+def compute_coverage_activ(taus, abunds, th_ab=1):
+
+    mask = abunds > th_ab
+    if sum(mask) == 0:
+        return 0
+    betas = np.exp(-1/taus)
+    
+    return np.sum(abunds[mask]*betas[mask]) / np.sum(abunds[mask])
+
+
+def compute_coverage_min(h_dists, L, abunds, th_ab=1):
+
+    mask = abunds > th_ab
+    if sum(mask) == 0:
+        return L
+    
+    return np.min(h_dists[mask]) 
+
+
+def compute_inv_simps(Ts_mat, T_th=1):
+    """
+    Compute the inverse Simpson's index for a list of abundaces arrays.
+    """
+    T_freqs_mat = [T[T > T_th] / np.sum(T[T > T_th]) for T in Ts_mat]
+    inv_simps = np.array([1 / np.sum(freqs**2) for freqs in T_freqs_mat])
+    inv_simps = inv_simps[~np.isnan(inv_simps)]
+    inv_simps = inv_simps[~np.isinf(inv_simps)]
+    return np.mean(inv_simps)
+
+
+def compute_richness(Ts_mat, strings, T_th=1):
+    """
+    Number of different clones with abundance larger than T_th
+    """
+    R_list = [len(np.unique(strings[r][Ts_mat[r] > T_th], axis=0)) for r in range(len(strings))]
+    return np.mean(R_list)
